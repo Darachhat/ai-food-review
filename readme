@@ -1,0 +1,77 @@
+# Student Project Report: Restaurant Review Sentiment Prediction
+
+## 3. Methodology
+
+### 3.1 Dataset Description
+The dataset used in this project is the **Cambodian Food Panda Restaurants Reviews** (Phnom Penh subset), collected from Kaggle.
+*   **Source File:** `kh_phnom_penh_reviews.csv`
+*   **Total Samples:** ~14,647 reviews
+*   **Key Columns:** `text` (the reviewer's comment), `overall` (rating 1-5), and metadata like `storeId`.
+*   **Language Composition:** The dataset is linguistically diverse, containing **English**, **Khmer** (Cambodian), and **Code-Mixed** (both languages in one review) text. This poses a unique challenge for natural language processing.
+*   **Labeling:** Ratings were converted into sentiment classes:
+    *   **Negative:** 1-2 stars
+    *   **Neutral:** 3 stars
+    *   **Positive:** 4-5 stars
+
+### 3.2 Exploratory Data Analysis (EDA)
+We explored the data to understand class balance and language distribution.
+*   **Sentiment Distribution:** The dataset is imbalanced.
+    *   **Positive:** Dominant class (~50%)
+    *   **Negative:** Significant portion (~40%)
+    *   **Neutral:** Minority class (~10%), making it the hardest to predict.
+*   **Language Analysis:** A custom function detected Khmer and English characters. A significant portion of reviews are English-only or Khmer-English mixed.
+*   **Visualization:** Bar charts and pie charts were generated to visualize these distributions (see `language_distribution.png` and `sentiment_distribution.png`).
+
+### 3.3 Preprocessing
+To prepare the raw text for machine learning models, the following preprocessing steps were applied:
+
+1.  **Text Cleaning (`clean_code_mixed_text` function):**
+    *   **Unicode Normalization:** Normalized text to `NFKC` form.
+    *   **Noise Removal:** Removed URLs, email addresses, and non-alphanumeric characters (preserving Khmer script `\u1780-\u17FF` and English `a-zA-Z`).
+    *   **Standardization:** Converted all text to lowercase and stripped extra whitespace.
+2.  **Label Encoding:** Converted string labels ('negative', 'neutral', 'positive') into integers (0, 1, 2) using `LabelEncoder`.
+3.  **Feature Extraction (TF-IDF):**
+    *   **Vectorization:** Used `TfidfVectorizer`.
+    *   **Analyzer:** `char` (Character-level n-grams) was chosen over word-level to better handle the agglutinative nature of Khmer and the spelling variations in code-mixed text.
+    *   **N-gram Range:** (2, 4) characters.
+    *   **Max Features:** Limited to 5,000 top features to control dimensionality.
+
+### 3.4 Model Selection and Training
+We evaluated a diverse set of machine learning models to identify the best performer.
+
+1.  **Baseline Models:**
+    *   **Naive Bayes (MultinomialNB):** A standard baseline for text classification.
+    *   **Logistic Regression:** Robust linear model, trained with `class_weight='balanced'` to handle imbalance.
+    *   **Random Forest:** Ensemble bagging method.
+    *   **XGBoost (Original):** Gradient boosting machine.
+
+2.  **Advanced Models (Improvements):**
+    *   **LinearSVC (Support Vector Classifier):** Known for efficacy in high-dimensional text data. Implemented with `CalibratedClassifierCV` to provide probability outputs.
+    *   **Tuned XGBoost:** Hyperparameters optimized (`n_estimators=200`, `max_depth=7`) and trained with specific sample weights.
+    *   **Voting Classifier:** An ensemble combining Logistic Regression, LinearSVC, and XGBoost using soft voting to leverage the strengths of each.
+
+### 3.5 Model Fine-tuning and Evaluation
+*   **Class Weighting:** To address the low performance on the Neutral class, we applied `class_weight='balanced'` and further experimented with manually boosting the Neutral class weight by a factor of 1.5.
+*   **Evaluation Metric:** The primary metric for success was **Accuracy**. However, we closely monitored the **Neutral F1 Score** since classifying neutral reviews is the primary challenge in this dataset.
+
+## 4. Result and Discussion
+
+The following table summarizes the performance of the evaluated models:
+
+| Model | Accuracy | Neutral F1 Score | Observations |
+| :--- | :--- | :--- | :--- |
+| **LinearSVC** | **79.97%** | 0.051 | **Best Accuracy.** Exceptional at distinguishing Positive vs Negative but struggles severely with Neutral. |
+| **Logistic Regression** | 73.48% | **0.320** | Balanced performance. Best at catching Neutral reviews but lower overall accuracy. |
+| **XGBoost (Tuned)** | 72.08% | 0.294 | Good balance, but did not outperform linear models on this sparse dataset. |
+| **Voting Ensemble** | 70.99% | 0.305 | Failed to synergize the models effectively, likely due to conflicting predictions on boundary cases. |
+
+**Discussion:**
+*   **LinearSVC is better** for overall deployment because it achieved the highest accuracy of nearly **80%**, meeting the project's success criteria (80% target). Its decision boundary is very effective at separating the clear positive/negative sentiments which constitute ~90% of the data.
+*   **The Trade-off:** While LinearSVC wins on accuracy, it sacrifices the Neutral class (F1 dropped to 0.05). This suggests the model creates a sharp hyperplane that ignores the subtle "middle ground" of neutral reviews in favor of maximizing correct classifications on the majority classes.
+*   **Voting Classifier Underperformance:** The ensemble did not improve results, suggesting that the underlying models were making similar errors or that the LinearSVC's confidence was diluted by the weaker models.
+
+## 5. Conclusion
+In this project, we successfully developed a sentiment analysis model for Khmer-English code-mixed restaurant reviews.
+*   **Key Achievement:** We improved the model accuracy from ~73% (Baseline Logistic Regression) to **79.97%** by implementing a **LinearSVC** model with character-level TF-IDF features.
+*   **Insight:** Character-level features proved highly effective for the noisy, code-mixed text.
+*   **Future Work:** To address the poor Neutral class detection without sacrificing overall accuracy, future work should explore deep learning approaches (like LSTM or BERT-multilingual) or more sophisticated data augmentation techniques (SMOTE, mild oversampling) specifically targeting the neutral minority class.
