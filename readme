@@ -56,22 +56,24 @@ We evaluated a diverse set of machine learning models to identify the best perfo
 
 ## 4. Result and Discussion
 
-The following table summarizes the performance of the evaluated models:
+The following table summarizes the comprehensive performance of the evaluated models (weighted averages for Precision, Recall, F1):
 
-| Model | Accuracy | Neutral F1 Score | Observations |
-| :--- | :--- | :--- | :--- |
-| **LinearSVC** | **79.97%** | 0.051 | **Best Accuracy.** Exceptional at distinguishing Positive vs Negative but struggles severely with Neutral. |
-| **Logistic Regression** | 73.48% | **0.320** | Balanced performance. Best at catching Neutral reviews but lower overall accuracy. |
-| **XGBoost (Tuned)** | 72.08% | 0.294 | Good balance, but did not outperform linear models on this sparse dataset. |
-| **Voting Ensemble** | 70.99% | 0.305 | Failed to synergize the models effectively, likely due to conflicting predictions on boundary cases. |
+| Model | Accuracy | Precision | Recall | F1-Score | Observations |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Voting Ensemble** | **80.89%** | 0.781 | 0.809 | **0.788** | **Best Overall.** Effectively balances the strengths of LinearSVC and others. |
+| **LinearSVC** | 79.97% | 0.760 | 0.800 | 0.764 | High accuracy, but slightly lower F1-Score, indicating some trade-offs in class balance. |
+| **Logistic Regression** | 73.48% | 0.797 | 0.735 | 0.759 | Good precision but suffers in recall compared to the top performers. |
+| **XGBoost (Tuned)** | 72.08% | **0.807** | 0.721 | 0.754 | Highest precision but lowest accuracy/recall; tends to be conservative. |
+
+![Detailed Model Comparison](detailed_model_comparison.png)
 
 **Discussion:**
-*   **LinearSVC is better** for overall deployment because it achieved the highest accuracy of nearly **80%**, meeting the project's success criteria (80% target). Its decision boundary is very effective at separating the clear positive/negative sentiments which constitute ~90% of the data.
-*   **The Trade-off:** While LinearSVC wins on accuracy, it sacrifices the Neutral class (F1 dropped to 0.05). This suggests the model creates a sharp hyperplane that ignores the subtle "middle ground" of neutral reviews in favor of maximizing correct classifications on the majority classes.
-*   **Voting Classifier Underperformance:** The ensemble did not improve results, suggesting that the underlying models were making similar errors or that the LinearSVC's confidence was diluted by the weaker models.
+*   **Voting Classifier is the Winner:** It achieved the highest **Accuracy (80.89%)** and **F1-Score (0.788)**. By combining the probability outputs of Logistic Regression, LinearSVC, and XGBoost (Soft Voting), it smoothed out individual model errors, leading to more robust predictions.
+*   **LinearSVC Strength:** LinearSVC remains a very strong individual contender with ~80% accuracy, proving that the high-dimensional TF-IDF features are well-separated linearly.
+*   **Precision vs. Recall Trade-off:** Tuned XGBoost achieved the highest Precision (80.7%), meaning when it predicts a sentiment, it's usually right, but it misses many cases (lower Recall 72%). The Voting model strikes the best balance.
 
 ## 5. Conclusion
 In this project, we successfully developed a sentiment analysis model for Khmer-English code-mixed restaurant reviews.
-*   **Key Achievement:** We improved the model accuracy from ~73% (Baseline Logistic Regression) to **79.97%** by implementing a **LinearSVC** model with character-level TF-IDF features.
-*   **Insight:** Character-level features proved highly effective for the noisy, code-mixed text.
-*   **Future Work:** To address the poor Neutral class detection without sacrificing overall accuracy, future work should explore deep learning approaches (like LSTM or BERT-multilingual) or more sophisticated data augmentation techniques (SMOTE, mild oversampling) specifically targeting the neutral minority class.
+*   **Key Achievement:** We surpassed the initial baseline of ~73% accuracy, achieving **80.89%** with a **Voting Ensemble** of LinearSVC, Logistic Regression, and XGBoost.
+*   **Insight:** Character-level TF-IDF features combined with ensemble learning proved highly effective for handling the noise and complexity of code-mixed text.
+*   **Future Work:** While accuracy is high, further improvements could focus on the minority "Neutral" class using advanced deep learning techniques (like LSTM or Transformers) or targeted data augmentation.
